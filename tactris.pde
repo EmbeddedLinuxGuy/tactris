@@ -9,6 +9,12 @@
 #define FINGERS 4
 #define JOINTS 4
 
+#define SPECIAL_FINGER_1 1
+#define SPECIAL_JOINT_1  1
+
+#define SPECIAL_FINGER_2 2
+#define SPECIAL_JOINT_2 2
+
 int button[JOINTS] = {
     //    33, 34, 35, 32
     33, 34, 35, 32
@@ -99,13 +105,16 @@ int getJoint(void) {
 }
 
 //#define TIMEOUT 4000    
-unsigned long TIMEOUT = 1000;
 //#define BASE_DELAY 2000 // ms
 //#define EXTRA_DELAY 2000 // ms
+
+
+unsigned long TIMEOUT = 4000;
+
 #define BASE_DELAY 200 // ms
 #define EXTRA_DELAY 20 // ms
 
-#define PRESSES_NEEDED 6
+#define PRESSES_NEEDED 2
 
 void fail() {
     int f, j;
@@ -126,8 +135,18 @@ void fail() {
 	}
 	delay(500);
     }
+    while (true) { delay(10000); } //dead
 }
 
+int getPressedJoint() {
+    int j;
+    int count = 0;
+
+    while (tacstate[finger][j] == OFF) {
+	j = random(0, JOINTS);
+    }
+    return j;
+}
 void loop() {
     delay(BASE_DELAY + random(0, EXTRA_DELAY));
 
@@ -143,7 +162,7 @@ void loop() {
     bool wait_press = true;
     int num_presses = 0;
 
-    while ((millis() < (up_time + TIMEOUT)) && (num_presses < PRESSES_NEEDED)) {
+    while ((millis() < (up_time + (TIMEOUT - (unsigned long)(500*finger)))) && (num_presses < PRESSES_NEEDED)) {
 	// wait for button click
 	bool is_pressed = bouncer[joint].update();
 	if (wait_press && is_pressed) {
@@ -161,6 +180,16 @@ void loop() {
 	/* success */
 	Serial.println("Succeeded - pin retracts");
 	digitalWrite(MOLE[finger][joint], OFF);
+	if ((finger == SPECIAL_FINGER_1) && (joint == SPECIAL_JOINT_1)) {
+	    if (joints_left < JOINTS) {
+		int reset_joint = getPressedJoint();
+		digitalWrite(MOLE[finger][reset_joint], OFF);
+		tacstate[finger][reset_joint] = OFF;
+		joints_left++;
+	    } else {
+
+	    }
+	}
     } else {
 	/* failure */
 	Serial.println("Failed - pin stays");
